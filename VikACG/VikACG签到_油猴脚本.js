@@ -2,7 +2,7 @@
 // @name         VikACG 自动签到
 // @description  打开任意网站时自动签到，第一次使用需弹窗填写pushplus_token
 // @namespace    http://tampermonkey.net/
-// @version      0.2.8
+// @version      0.2.9
 // @author       lei
 // @match        https://*/*
 // @icon         http://vikacg.com/favicon.ico
