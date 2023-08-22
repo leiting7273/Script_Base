@@ -2,7 +2,7 @@
 // @name         VikACG 自动签到
 // @description  打开任意网站时自动签到，第一次使用需弹窗填写pushplus_token
 // @namespace    http://tampermonkey.net/
-// @version      0.2.9
+// @version      0.2.10
 // @author       lei
 // @match        https://*/*
 // @icon         http://vikacg.com/favicon.ico
@@ -23,15 +23,18 @@
     const day = myDate.getDate()            //日
     const today = year + "-" + month + "-" + day
     var lastDay = GM_getValue('lastDay','')
+    var pushToken = GM_getValue('pushToken','')
 
     if(today==lastDay){
         msg = '今日已签到'
-        log(msg)
-        GM_log(msg,'info')
+        if(pushToken.length){
+            console.log(msg)
+        }else{
+            log(msg)
+        }
         return
     }
 
-    var pushToken = GM_getValue('pushToken',null)
     if(pushToken==null){
         pushToken = prompt("请输入您pushToken:", "")
         GM_setValue('pushToken',pushToken)
