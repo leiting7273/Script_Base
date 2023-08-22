@@ -2,7 +2,7 @@
 // @name         浮窗看小说
 // @namespace    myBook
 // @version      0.1.2
-// @description  1、在任意网页按下组合键“Ctrl+Shift+Z”，提示书架选择小说或输入小说网址 2、看小说时按下组合键“Ctrl+Shift+Z”可隐藏和显示悬浮窗 3、按"->"看下一章
+// @description  1、在任意网页按下组合键“Ctrl+Shift+Z”，提示书架选择小说或输入小说网址 2、看小说时按下组合键“Ctrl+Shift+Z”可隐藏和显示悬浮窗 3、按"->"看下一章 4、按↑键看新书
 // @author       Lei
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
