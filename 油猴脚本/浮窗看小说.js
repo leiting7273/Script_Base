@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         浮窗看小说
 // @namespace    myBook
-// @version      0.1.3
+// @version      0.1.4
 // @description  1、在任意网页按下组合键“Ctrl+Shift+Z”，提示书架选择小说或输入小说网址 2、看小说时按下组合键“Ctrl+Shift+Z”可隐藏和显示悬浮窗 3、按"->"看下一章 4、按↑键看新书
 // @author       Lei
 // @match        *://*/*
@@ -79,6 +79,7 @@
     });
 
     // 监听键盘方向键按下事件
+    var link    //待跳转链接
     document.addEventListener('keydown', function (event) {
         switch (event.key) {
             case 'ArrowUp':
@@ -87,11 +88,18 @@
             case 'ArrowDown':
                 // handleArrowDown();
                 break;
-            case 'ArrowLeft':
-                // handleArrowLeft();
+            case 'ArrowLeft':   //上一章
+                link = getLastChapterLink()
+                if (link != null) {
+                    console.log('跳转到上一页/章：' + link)
+                    deleteBook(bookObj.bookURL)  //删除书签
+                    getUrl(link)    //跳转
+                } else {
+                    alert('未找到下一章/页')
+                }
                 break;
             case 'ArrowRight':  //下一章
-                let link = getNextChapterLink()
+                link = getNextChapterLink()
                 if (link != null) {
                     console.log('跳转到下一页/章：' + link)
                     deleteBook(bookObj.bookURL)  //删除上一章的书签
@@ -325,6 +333,27 @@
         for (const link of links) {
             const linkText = link.textContent.toLowerCase();
             if (linkText.includes('下一章') || linkText.includes('下一页')) {
+                const linkHref = link.getAttribute('href'); // 获取超链接的 href 属性
+                if (linkHref) {
+                    const baseHost = new URL(bookObj.bookURL).origin; // 获取基本地址（域名）
+                    nextChapterLink = new URL(linkHref, baseHost).href; // 构建完整地址
+                    break;
+                }
+            }
+        }
+
+        return nextChapterLink;
+    }
+
+    //上一章
+    function getLastChapterLink() {
+        const links = docu.querySelectorAll('a'); // 获取所有超链接元素
+        let nextChapterLink = null;
+
+        // 遍历超链接元素，查找下一章的超链接
+        for (const link of links) {
+            const linkText = link.textContent.toLowerCase();
+            if (linkText.includes('上一章') || linkText.includes('上一页')) {
                 const linkHref = link.getAttribute('href'); // 获取超链接的 href 属性
                 if (linkHref) {
                     const baseHost = new URL(bookObj.bookURL).origin; // 获取基本地址（域名）
