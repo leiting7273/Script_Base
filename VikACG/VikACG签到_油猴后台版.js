@@ -21,7 +21,7 @@
     'use strict';
     var b2_token
     let msg = ''
-    var pushToken = '6d5e7c15d78246f19ce62132bff5b65e'  //填写自己的pushtoken
+    var pushToken = ''  //填写自己的pushtoken
     
     //操作cookie
     // 定义 Cookie 信息
