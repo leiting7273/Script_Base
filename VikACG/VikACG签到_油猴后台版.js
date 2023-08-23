@@ -2,7 +2,7 @@
 // @name         VikACG 自动签到（后台版）
 // @description  每天自动签到，需手动填写pushplus_token
 // @namespace    vikacg.com
-// @version      0.2.10
+// @version      0.2.11
 // @author       lei
 // @background
 // @crontab      * * once * *
@@ -17,11 +17,11 @@
 
 
 //执行签到
-(function () {
+return new Promise((resolve, reject) => {
     'use strict';
     var b2_token
     let msg = ''
-    var pushToken = ''  //填写自己的pushtoken
+    var pushToken = '6d5e7c15d78246f19ce62132bff5b65e'  //填写自己的pushtoken
     
     //操作cookie
     // 定义 Cookie 信息
@@ -108,6 +108,7 @@
                                 sendWeChat(pushToken, msg)
                                 log("签到时间：" + checkinDate + "，签到获得积分：" + checkGetMission + "，目前积分：" + my_credit)
                                 log(msg);
+                                resolve("ok");
                             }
                         } else {
                             log('请求失败，是否未登录？')
@@ -119,14 +120,14 @@
                     },
                 });
             } else {
-                console.log("未找到名为 b2_token 的 Cookie");
+                reject("未找到名为 b2_token 的 Cookie");
             }
         } else {
-            console.error("获取 Cookie 时出错:", error);
+            reject("获取 Cookie 时出错:", error);
         }
     });
-    
-})();
+    reject("error");
+});
 
 
 
