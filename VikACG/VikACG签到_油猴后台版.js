@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         VikACG 自动签到（后台版）
-// @description  打开任意网站时自动签到，第一次使用需弹窗填写pushplus_token
+// @description  每天自动签到，需手动填写pushplus_token
 // @namespace    vikacg.com
 // @version      0.2.10
 // @author       lei
