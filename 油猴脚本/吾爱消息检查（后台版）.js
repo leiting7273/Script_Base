@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         吾爱消息检查（后台版）
 // @namespace    https://www.52pojie.cn/
-// @version      0.1.1
+// @version      0.1.0
 // @description  吾爱消息检查
 // @author       lei
 // @background
