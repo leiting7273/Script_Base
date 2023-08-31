@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         VikACG 自动签到（后台版）
+// @name         VikACG 自动签到（定时）
 // @description  每天自动签到，需手动填写pushplus_token
 // @namespace    vikacg.com
-// @version      0.2.11
+// @version      0.2.12
 // @author       lei
 // @background
 // @crontab      * * once * *
@@ -12,7 +12,7 @@
 // @grant        GM_setValue
 // @grant        GM_log
 // @grant        GM_cookie
-// @connect      vikacg.com
+// @connect      www.vikacg.com
 // ==/UserScript==
 
 
@@ -21,8 +21,6 @@ return new Promise((resolve, reject) => {
     'use strict';
     var b2_token
     let msg = ''
-    var pushToken = '6d5e7c15d78246f19ce62132bff5b65e'  //填写自己的pushtoken
-    
     //操作cookie
     // 定义 Cookie 信息
     const cookieDetails = {
@@ -97,28 +95,34 @@ return new Promise((resolve, reject) => {
                                             var my_credit = json.mission.my_credit
                                             msg = date + " 签到成功，获得积分：" + credit + " 目前积分：" + my_credit + " 请查看积分是否有变动"
                                             log(msg)
-                                            sendWeChat(pushToken, msg)
+                                            sendNotification(msg)   //发送浏览器通知
+                                            resolve("ok");
                                         } else {
                                             log("签到失败")
+                                            sendNotification('签到失败')   //发送浏览器通知
+                                            reject("签到失败");
                                         }
-                                    },
+                                    }
                                 });
+                                reject("请求2异常？");
                             } else {
                                 msg = "今天已经签到，如有问题请尝试手动签到"
-                                sendWeChat(pushToken, msg)
                                 log("签到时间：" + checkinDate + "，签到获得积分：" + checkGetMission + "，目前积分：" + my_credit)
                                 log(msg);
                                 resolve("ok");
                             }
                         } else {
-                            log('请求失败，是否未登录？')
+                            msg = '请求失败，是否未登录？'
+                            log(msg)
                             GM_setValue('b2_token', null)
                             if (!compareDomains('www.vikacg.com')) {
                                 promptRedirect('https://www.vikacg.com')
                             }
+                            reject(msg);
                         }
-                    },
+                    }
                 });
+                reject("请求1异常？");
             } else {
                 reject("未找到名为 b2_token 的 Cookie");
             }
@@ -126,34 +130,24 @@ return new Promise((resolve, reject) => {
             reject("获取 Cookie 时出错:", error);
         }
     });
-    reject("error");
+    resolve("执行完成");
 });
 
 
 
-//微信通知
-function sendWeChat(pushToken, content) {
-    if (pushToken == '') {
-        log('不发送微信通知')
-        return
-    }
-    GM_log('推送token：' + pushToken, 'info')
-    let url = "http://www.pushplus.plus/send" //请求地址
-    let headers = { "content-type": "application/json" }  //headers
-    let body = "{'token':'" + pushToken + "','title':'VikACG签到通知','content':'" + content + "'}"
-    GM_xmlhttpRequest({
-        'url': url,
-        "method": "POST",
-        "headers": headers,
-        "data": body,
-        // "token="+pushToken+"&title=VikACG签到通知&content="+content,
-        "onload": function (result) {
-            let json = JSON.parse(result.response)
-            console.log('微信通知结果：')
-            console.log(json)
-            GM_log('微信通知结果：' + JSON.stringify(json), 'info')
+// 在脚本猫后台脚本中使用浏览器通知 API 发送通知
+function sendNotification(message) {
+    // 检查浏览器是否支持通知
+    GM_notification({
+        title: 'VikACG',
+        text: message,
+        icon: 'http://vikacg.com/favicon.ico',
+        timeout: 5000,
+        onclick: () => {
+            // 点击通知时打开链接
+            GM_openInTab('https://www.vikacg.com', { active: true });
         }
-    })
+    });
 }
 
 //域名比较
@@ -184,7 +178,7 @@ function promptRedirect(url) {
 function log(msg) {
     console.log(msg)
     GM_log(msg, 'info')
-    showMessage(msg)
+    
 }
 
 //识别字符串中文数量
@@ -207,92 +201,4 @@ function countChineseAndNonChinese(str) {
         chinese: chineseCount,
         nonChinese: nonChineseCount
     };
-}
-
-/***********************************以下是悬浮提示相关代码***********************************/
-
-// 用于保存当前显示的悬浮窗的 div
-var floatingContainer = null;
-//是否第一次调用
-var _flag = 1
-
-// 用于保存当前正在显示的悬浮窗列表
-const floatingBoxes = [];
-
-// 创建初始的悬浮容器
-function createFloatingContainer() {
-    floatingContainer = document.createElement('div');
-    floatingContainer.style.position = 'fixed';
-    floatingContainer.style.top = '50px';
-    floatingContainer.style.left = '20px';
-    floatingContainer.style.width = 'auto';
-    floatingContainer.style.height = '200px';
-    floatingContainer.style.zIndex = '9999';
-    document.body.appendChild(floatingContainer);
-}
-
-// 创建悬浮提示框
-function createFloatingBox(message) {
-    const floatingBox = document.createElement('div');
-    floatingBox.style.position = 'relative';
-    floatingBox.style.backgroundColor = '#f0f0f0';
-    floatingBox.style.border = '1px solid #ddd';
-    floatingBox.style.padding = '5px';
-    floatingBox.style.borderRadius = '5px';
-    floatingBox.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
-    floatingBox.style.whiteSpace = 'nowrap';
-    floatingBox.style.marginBottom = '40px'; // 初始下边距为 40px
-    floatingBox.innerText = message;
-    floatingContainer.appendChild(floatingBox);
-    return floatingBox;
-}
-
-// 更新悬浮提示框的位置
-function updateFloatingBoxesPosition() {
-    let offsetY = 0;
-    for (let i = 0; i < floatingBoxes.length; i++) {
-        floatingBoxes[i].style.bottom = offsetY + 'px';
-        offsetY += floatingBoxes[i].offsetHeight + 5;
-    }
-}
-
-// 显示悬浮提示
-function showFloatingMessage(message) {
-    if (!floatingContainer) {
-        createFloatingContainer();
-    }
-
-    const floatingBox = createFloatingBox(message);
-    floatingBoxes.push(floatingBox);
-
-    // 如果有多个悬浮提示框，则调整它们的位置
-    if (floatingBoxes.length > 1) {
-        updateFloatingBoxesPosition();
-    }
-
-    // 在指定的时间间隔后，隐藏浮窗并从页面中移除
-    setTimeout(function () {
-        floatingBox.style.display = 'none';
-        floatingContainer.removeChild(floatingBox);
-        const indexToRemove = floatingBoxes.indexOf(floatingBox);
-        if (indexToRemove !== -1) {
-            floatingBoxes.splice(indexToRemove, 1);
-            if (floatingBoxes.length > 0) {
-                updateFloatingBoxesPosition();
-            }
-        }
-    }, 5000); // 悬浮提示显示时间，单位毫秒
-}
-
-//调用显示浮窗
-function showMessage(message) {
-    if (_flag == 1) {
-        _flag++
-        showFloatingMessage(message)
-    } else {
-        _flag++
-        setTimeout(function () {
-            showFloatingMessage(message)
-        }, (_flag - 2) * 2000)
-    }
 }
