@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         吾爱消息检查（后台版）
 // @namespace    https://www.52pojie.cn/
-// @version      0.1.1
+// @version      0.1.2
 // @description  吾爱消息检查
 // @author       lei
 // @background
@@ -36,10 +36,7 @@ return new Promise((resolve, reject) => {
             GM_xmlhttpRequest({
                 method: "GET",
                 url: requestUrl,
-                headers: {
-                    "Cookie": allCookies,
-                    // Add any other headers you need
-                },
+                cookie: allCookies,
                 onload: function (response) {
                     const responseBody = response.responseText;
                     GM_log('响应结果：' + responseBody)
@@ -52,9 +49,7 @@ return new Promise((resolve, reject) => {
                             GM_xmlhttpRequest({
                                 method: "GET",
                                 url: "https://www.52pojie.cn/forum.php",
-                                headers: {
-                                    "Cookie": allCookies
-                                },
+                                cookie: allCookies,
                                 responseType: "text",
                                 onload: function (response) {
                                     if (response.status === 200) {
