@@ -30,19 +30,44 @@ function signIn() {
     if (isSignIn == "是" && aliToken != "") {
       let logMessage = ""
       let rewardMessage = ""
-      let resp = HTTP.post("https://auth.aliyundrive.com/v2/account/token",
+      let resp = HTTP.post("https://auth.aliyundrive.com/v2/account/token", //获取授权码
         JSON.stringify({
           "grant_type": "refresh_token",
           "refresh_token": aliToken
         })
       )
-      if (resp.status !== 200) { throw new Error("fetch err! status is " + resp.status()) }//服务器响应错误
+      if (resp.status != 200) {
+        console.error("fetch err! status is " + resp.status)
+      }//服务器响应错误
       let data = resp.json() // 将响应数据解析为 JSON 格式
       let access_token = data['access_token']; // 获取访问令牌
       let phone = data["user_name"]; // 获取用户名
-
+      let new_refresh_token = data['refresh_token']  //获取访问令牌的时候能拿到一个新的refresh_token，写回表格
+      if (new_refresh_token != aliToken) {
+        aliSheet.Range("A" + row).Value = new_refresh_token  //回写新的refresh_token
+      }
       if (access_token == undefined) { // 如果访问令牌未定义
         console.log("单元格【A" + row + "】内的token值错误，程序执行失败，请重新复制正确的token值")
+        //微信通知
+        if (isSendWeChat == "是") {
+          let result = sendWeChat(pushToken,
+            "阿里云盘签到通知 - " + data_time,
+            "token无效，请及时更新"
+          )
+          if (result.code != 200) {
+            console.log("签到结果推送至微信失败: " + result.msg)
+          } else {
+            console.log("签到结果已推送至微信");
+          }
+        }
+        //邮箱通知
+        if (isSendEmail == "是") {
+          try {
+            sendEmail(recEmail, "token无效，请及时更新")
+          } catch (error) {
+            console.log("账号：" + phone + " - 发送邮件失败：" + error)
+          }
+        }
         continue // 跳过当前行的后续操作
       }
 
@@ -53,7 +78,10 @@ function signIn() {
           JSON.stringify({ "_rx-s": "mobile" }),
           { headers: { "Authorization": access_token2 } }
         )
-        if (data2.status !== 200) { throw new Error("fetch err! status is " + resp.status()) }//服务器响应错误
+        if (data2.status !== 200) {
+
+          throw new Error("fetch err! status is " + resp.status())
+        }//服务器响应错误
         data2 = data2.json(); // 将响应数据解析为 JSON 格式
         let signin_count = data2['result']['signInCount']; // 获取签到次数
         logMessage = "账号：" + phone + " - 签到成功，本月累计签到 " + signin_count + " 天"
@@ -85,7 +113,8 @@ function signIn() {
         } else { rewardMessage = " - 奖励待领取" }
 
         //领取月末奖励
-        if (currentDay === lastDayOfMonth) {
+        if (currentDay == lastDayOfMonth) {
+          getAllRewards(row)//月末领取所有未领取签到奖励
           // 发起网络请求-获取token
           let data = HTTP.post("https://auth.aliyundrive.com/v2/account/token",
             JSON.stringify({
@@ -113,10 +142,11 @@ function signIn() {
             var claimStatus = data4["result"]["status"]; // 获取奖励状态
             var day = lastDayOfMonth; // 获取最后一天的日期
 
-            if (claimStatus === "CLAIMED") {
+            if (claimStatus == "CLAIMED") {
               console.log("账号：" + phone + " - 第 " + day + " 天奖励领取成功");
             } else {
               console.log("账号：" + phone + " - 第 " + day + " 天奖励领取失败");
+              console.log(data4)
             }
           } catch {
             console.log("单元格【A" + row + "】内的token签到失败");
@@ -150,6 +180,28 @@ function signIn() {
         }
       } catch {
         console.log("单元格【A" + row + "】内的token签到失败");
+        //微信通知
+        if (isSendWeChat == "是") {
+          let result = sendWeChat(pushToken,
+            "阿里云盘签到通知 - " + data_time,
+            "签到失败"
+          )
+          if (result.code != 200) {
+            console.log("签到结果推送至微信失败: " + result.msg)
+          } else {
+            console.log("签到结果已推送至微信");
+            // console.log(result);
+          }
+        }
+
+        //邮箱通知
+        if (isSendEmail == "是") {
+          try {
+            sendEmail(recEmail, "签到失败")
+          } catch (error) {
+            console.log("账号：" + phone + " - 发送邮件失败：" + error)
+          }
+        }
         continue; // 跳过当前行的后续操作
       }
     }
@@ -191,15 +243,58 @@ function sendEmail(recEmail, message) {
   });
 }
 
-//获取END标行号
-// function getEndRow() {
-//   for (let row = 3; row < aliUsedRowEnd; row++) {
-//     if (aliSheet.Range("A" + row).Text == "END") return row
-//   }
-//   console.error("END标缺失！")
-//   return 7
-// }
+function getAllRewards(row) {
+  // 发起网络请求-获取token
+  let data = HTTP.post("https://auth.aliyundrive.com/v2/account/token",
+    JSON.stringify({
+      "grant_type": "refresh_token",
+      "refresh_token": aliSheet.Range('A' + row).Text
+    })
+  );
+  data = data.json(); // 将响应数据解析为 JSON 格式
+  let access_token = data['access_token']; // 获取访问令牌
 
+  if (access_token === undefined) { // 如果访问令牌未定义
+    console.log("单元格【A" + row + "】内的token值错误，程序执行失败，请重新复制正确的token值");
+    return; // 跳过当前行的后续操作
+  }
+
+  access_token = 'Bearer ' + access_token; // 构建包含访问令牌的请求头
+
+  let rewardsList
+  let rewardsResp = HTTP.post('https://member.aliyundrive.com/v2/activity/sign_in_list', {}, { headers: { "Authorization": access_token } })
+  if (rewardsResp.status == 200) {
+    let json = rewardsResp.json()
+    let signInCount = json.result.signInCount //签到日期
+    rewardsList = json.result.signInInfos
+    for (let i = 0; i < signInCount; i++) {
+      if (rewardsList[i].rewards[0].status == 'finished') {
+        let day = rewardsList[i].day
+        //领取当天奖励
+        console.log('领取' + day + '号奖励')
+        let response = HTTP.post(
+          "https://member.aliyundrive.com/v1/activity/sign_in_reward?_rx-s=mobile",
+          JSON.stringify({ "signInDay": day }),
+          { headers: { "Authorization": access_token } }
+        );
+        response = response.json(); // 将响应数据解析为 JSON 格式
+        var claimStatus = response["success"]; // 获取奖励状态
+
+        if (claimStatus) {
+          console.log('A' + row + " - 第 " + day + " 天奖励领取成功");
+        } else {
+          console.log('A' + row + " - 第 " + day + " 天奖励领取失败");
+          console.log(response)
+        }
+      }
+    }
+  } else {
+    console.error('A' + row + '月底领取所有奖励检测响应异常')
+    console.error(rewardsResp.text())
+  }
+
+
+}
 
 //执行签到
 if (hasSheet(aliSheet) && hasSheet(emailSheet))
