@@ -12,97 +12,77 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_notification
 // @grant        GM_openInTab
-// @grant        GM_cookie
-// @connect      www.52pojie.cn
 // ==/UserScript==
 
 return new Promise((resolve, reject) => {
-
-    // 获取 Cookie
-    const cookieDetails = {
-        domain: "www.52pojie.cn",
-    };
-
     GM_log('开始检查新消息')
 
-    GM_cookie("list", { domain: cookieDetails.domain }, function (cookies) {
-        // 构建 Cookie 字符串
-        const allCookies = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
-        // console.log(allCookies)
-        if (allCookies) {
-            var formhash = GM_getValue('formhash', '')
-            var requestUrl = 'https://www.52pojie.cn/plugin.php?id=noti&inajax=yes&action=checknew&type=3_3_1&h=' + formhash + '&time=' + new Date().getTime() + '&handlekey=getMsg&m=0&f=' + Math.random();
-            // 发送 GET 请求
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: requestUrl,
-                cookie: allCookies,
-                onload: function (response) {
-                    const responseBody = response.responseText;
-                    GM_log('响应结果：' + responseBody)
-                    const json = parseJSONFromCDATANode(responseBody);
-                    if (json && json.msg && json.msg != "") {
-                        const msg = json.msg
-                        console.log(msg)
-                        if (msg == 'permissionsInvalid') {  //formhash过期
-                            // 发送GET请求
-                            GM_xmlhttpRequest({
-                                method: "GET",
-                                url: "https://www.52pojie.cn/forum.php",
-                                cookie: allCookies,
-                                responseType: "text",
-                                onload: function (response) {
-                                    if (response.status === 200) {
-                                        // 解析响应HTML
-                                        const parser = new DOMParser();
-                                        const doc = parser.parseFromString(response.responseText, "text/html");
+    var formhash = GM_getValue('formhash', '')
+    var requestUrl = 'https://www.52pojie.cn/plugin.php?id=noti&inajax=yes&action=checknew&type=3_3_1&h=' + formhash + '&time=' + new Date().getTime() + '&handlekey=getMsg&m=0&f=' + Math.random();
+    // 发送 GET 请求
+    GM_xmlhttpRequest({
+        method: "GET",
+        url: requestUrl,
+        onload: function (response) {
+            const responseBody = response.responseText;
+            GM_log('响应结果：' + responseBody)
+            const json = parseJSONFromCDATANode(responseBody);
+            if (json && json.msg && json.msg != "") {
+                const msg = json.msg
+                console.log(msg)
+                if (msg == 'permissionsInvalid') {  //formhash过期
+                    // 发送GET请求
+                    GM_xmlhttpRequest({
+                        method: "GET",
+                        url: "https://www.52pojie.cn/forum.php",
+                        responseType: "text",
+                        onload: function (response) {
+                            if (response.status === 200) {
+                                // 解析响应HTML
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(response.responseText, "text/html");
 
-                                        // 查找<input type="hidden" name="formhash" value="?????" />
-                                        const formhashInput = doc.querySelector('input[name="formhash"]');
+                                // 查找<input type="hidden" name="formhash" value="?????" />
+                                const formhashInput = doc.querySelector('input[name="formhash"]');
 
-                                        if (formhashInput) {
-                                            const formhashValue = formhashInput.value;
-                                            console.log("formhash值是: " + formhashValue);
-                                            GM_setValue('formhash', formhashValue)
-                                        } else {
-                                            console.log("未找到formhash值");
-                                        }
-                                    } else {
-                                        console.log("请求失败，状态码：" + response.status);
-                                    }
-                                },
-                                onerror: function (error) {
-                                    console.error("请求出错: " + error);
+                                if (formhashInput) {
+                                    const formhashValue = formhashInput.value;
+                                    console.log("formhash值是: " + formhashValue);
+                                    GM_setValue('formhash', formhashValue)
+                                } else {
+                                    console.log("未找到formhash值");
                                 }
-                            });
-                            resolve('已重置formhash')
-                        }
-                        msg.forEach(item => {
-                            GM_log(item)
-                            if (item.data && item.data.content) {
-                                const content = item.data.content;
-                                console.log(content)
-                                const strippedContent = removeLastLinkAndTags(content);
-                                if (strippedContent !== "") {
-                                    showNotification(strippedContent);
-                                }
+                            } else {
+                                console.log("请求失败，状态码：" + response.status);
                             }
-                        });
-                    } else {
-                        GM_log('无新消息')
-                    }
-                    resolve('检查完成');
-                },
-                onerror: function (error) {
-                    reject("请求错误:", error);
+                        },
+                        onerror: function (error) {
+                            console.error("请求出错: " + error);
+                        }
+                    });
+                    resolve('已重置formhash')
                 }
-            });
-        } else {
-            console.log("未找到指定的 Cookie");
-            reject('未找到指定的 Cookie');
+                msg.forEach(item => {
+                    GM_log(item)
+                    if (item.data && item.data.content) {
+                        const content = item.data.content;
+                        console.log(content)
+                        const strippedContent = removeLastLinkAndTags(content);
+                        if (strippedContent !== "") {
+                            showNotification(strippedContent);
+                        }
+                    }
+                });
+            } else {
+                GM_log('无新消息')
+            }
+            resolve('检查完成');
+        },
+        onerror: function (error) {
+            reject("请求错误:", error);
         }
-        resolve('检查完成');
     });
+    resolve('检查完成');
 });
 
 //解析XML
