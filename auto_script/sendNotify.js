@@ -3,8 +3,7 @@ const got = require('got');
 const timeout = 15000;
 
 // 读取配置文件
-const configPath = path.join(__dirname, 'env.json');
-let config = require(configPath);
+const config = require('./config');
 
 const push_config = {
   HITOKOTO: false, // 启用一言（随机句子）
@@ -69,7 +68,7 @@ const push_config = {
   */
   QYWX_AM: '', // 企业微信应用
 
-  QYWX_KEY: config['QYWX_KEY'], // 企业微信机器人的 webhook(详见文档 https://work.weixin.qq.com/api/doc/90000/90136/91770)，例如：693a91f6-7xxx-4bc4-97a0-0ec2sifa5aaa
+  QYWX_KEY: config.QYWX_KEY, // 企业微信机器人的 webhook(详见文档 https://work.weixin.qq.com/api/doc/90000/90136/91770)，例如：693a91f6-7xxx-4bc4-97a0-0ec2sifa5aaa
 
   TG_BOT_TOKEN: '', // tg 机器人的 TG_BOT_TOKEN，例：1407203283:AAG9rt-6RDaaX0HBLZQq0laNOh898iFYaRQ
   TG_USER_ID: '', // tg 机器人的 TG_USER_ID，例：1434078534
