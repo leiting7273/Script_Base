@@ -4,7 +4,7 @@ smzdm 签到脚本
 
 cron: 10 8 * * *
 */
-require('./config');
+// require('./config');
 console.log('process.env:', process.env);
 const Env = require('./env');
 const { SmzdmBot, requestApi, removeTags, getEnvCookies, wait } = require('./bot');
