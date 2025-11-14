@@ -8,7 +8,7 @@ const testCookie = xmSheet.Range("A2").Text
 
 runByInfo();
 
-//遍历执行
+//遍历执行111
 function runByInfo() {
   let cookie, isSignIn, isSendEmail, userEmail, isSendWeChat, pushToken, msg, accountCookie, getNewCookieUrl
   for (let row = 2; "" != (isSignIn = xmSheet.Range("E" + row).Text); row++) {
@@ -197,3 +197,4 @@ function sendEmail(userEmail, message) {
     });
   } catch (error) { console.error(error) }
 }
+
